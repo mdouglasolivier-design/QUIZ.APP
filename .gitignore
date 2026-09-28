@@ -1,0 +1,14 @@
+# Build artifacts
+*.class
+out/
+*.jar
+
+# IDE
+.idea/
+
+# Runtime-generated files (the app recreates these as needed)
+results.csv
+email_log.csv
+settings.txt
+email.properties
+certificates/
