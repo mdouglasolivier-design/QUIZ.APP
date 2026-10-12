@@ -64,15 +64,15 @@ public class QuizGui {
     private static int timedOut;
     private static long millisUsed;
 
-    // --- palette ---
-    private static final Color BG = new Color(245, 247, 250);
-    private static final Color CARD = Color.WHITE;
-    private static final Color GREEN = new Color(40, 167, 69);
-    private static final Color RED = new Color(220, 53, 69);
-    private static final Color ACCENT = new Color(25, 118, 210);
-    private static final Color TEXT = new Color(33, 37, 41);
-    private static final Color MUTED = new Color(108, 117, 125);
-    private static final Color BORDER = new Color(222, 226, 230);
+    // --- palette (from shared theme) ---
+    private static final Color BG = UiTheme.BG;
+    private static final Color CARD = UiTheme.CARD;
+    private static final Color GREEN = UiTheme.SUCCESS;
+    private static final Color RED = UiTheme.DANGER;
+    private static final Color ACCENT = UiTheme.ACCENT;
+    private static final Color TEXT = UiTheme.TEXT;
+    private static final Color MUTED = UiTheme.MUTED;
+    private static final Color BORDER = UiTheme.BORDER;
 
     public static void main(String[] args) {
         String file = args.length > 0 ? args[0] : "questions.csv";
@@ -99,6 +99,7 @@ public class QuizGui {
 
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
+                UiTheme.install();
                 buildAndShow();
                 checkEmailConfiguredOnStartup();
             }
@@ -158,77 +159,43 @@ public class QuizGui {
         JPanel outer = new JPanel(new GridBagLayout());
         outer.setBackground(BG);
 
-        JPanel card = new JPanel();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBackground(CARD);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BORDER, 1, true),
-                BorderFactory.createEmptyBorder(30, 40, 30, 40)));
-        card.setMaximumSize(new Dimension(460, 320));
+        JPanel card = UiTheme.card(40, 34);
+        card.setMaximumSize(new Dimension(460, 420));
 
-        JLabel title = new JLabel("Java Quiz", SwingConstants.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 34));
-        title.setForeground(TEXT);
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel title = UiTheme.title("Java Quiz");
 
-        JLabel subtitle = new JLabel("Enter your name - your certificate is shown at the end\n(and optionally emailed)");
-        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        subtitle.setForeground(MUTED);
-        subtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel subtitle = UiTheme.subtitle(
+                "<html><div style='text-align:center'>Enter your name to begin.<br>"
+                + "Your certificate is generated at the end (email optional).</div></html>");
 
-        nameField = new JTextField(16);
-        nameField.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-        nameField.setHorizontalAlignment(JTextField.CENTER);
-        nameField.setMaximumSize(new Dimension(240, 34));
+        nameField = UiTheme.centeredTextField(16);
+        nameField.setMaximumSize(new Dimension(260, 38));
         nameField.setAlignmentX(Component.CENTER_ALIGNMENT);
+        nameField.setToolTipText("Your name appears on the certificate");
 
-        emailField = new JTextField(16);
-        emailField.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-        emailField.setHorizontalAlignment(JTextField.CENTER);
-        emailField.setMaximumSize(new Dimension(240, 34));
+        emailField = UiTheme.centeredTextField(16);
+        emailField.setMaximumSize(new Dimension(260, 38));
         emailField.setAlignmentX(Component.CENTER_ALIGNMENT);
         emailField.setToolTipText("Optional: leave blank to only download your certificate");
 
-        emailLabel = new JLabel("Your email (optional - only if you want it emailed)");
-        emailLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        emailLabel.setForeground(MUTED);
-        emailLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        emailLabel = UiTheme.hint("Your email (optional - only if you want it emailed)");
 
-        JLabel info = new JLabel(questions.size() + " questions  |  "
+        JLabel info = UiTheme.hint(questions.size() + " questions  |  "
                 + secondsPerQuestion + " seconds each");
-        info.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        info.setForeground(MUTED);
-        info.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JButton start = new JButton("Start Quiz");
-        start.setFont(new Font("Segoe UI", Font.BOLD, 17));
-        start.setBackground(ACCENT);
-        start.setForeground(Color.WHITE);
-        start.setFocusPainted(false);
-        start.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        JButton start = UiTheme.primaryButton("Start Quiz");
+        start.setFont(UiTheme.button());
         start.setAlignmentX(Component.CENTER_ALIGNMENT);
         start.addActionListener(e -> startQuiz());
 
-        JButton consoleBtn = new JButton("Play in console instead");
-        consoleBtn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        consoleBtn.setForeground(MUTED);
-        consoleBtn.setFocusPainted(false);
-        consoleBtn.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
-        consoleBtn.setContentAreaFilled(false);
-        consoleBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        JButton consoleBtn = UiTheme.ghostButton("Play in console instead");
         consoleBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
         consoleBtn.addActionListener(e -> {
             frame.dispose();
             QuizApp.main(new String[0]);
         });
 
-        JButton instructorBtn = new JButton("Instructor");
-        instructorBtn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        instructorBtn.setForeground(MUTED);
-        instructorBtn.setFocusPainted(false);
-        instructorBtn.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
-        instructorBtn.setContentAreaFilled(false);
-        instructorBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        JButton instructorBtn = UiTheme.ghostButton("Instructor");
         instructorBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
         instructorBtn.addActionListener(e -> InstructorPanel.showLogin(frame));
 
@@ -298,7 +265,7 @@ public class QuizGui {
         // answer buttons
         buttonsPanel = new JPanel(new GridLayout(0, 1, 0, 10));
         buttonsPanel.setOpaque(false);
-        buttonsPanel.setMaximumSize(new Dimension(420, 400));
+        buttonsPanel.setMaximumSize(new Dimension(460, 400));
 
         column.add(header);
         column.add(Box.createVerticalStrut(4));
@@ -319,26 +286,21 @@ public class QuizGui {
         JPanel outer = new JPanel(new GridBagLayout());
         outer.setBackground(BG);
 
-        JPanel card = new JPanel();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBackground(CARD);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BORDER, 1, true),
-                BorderFactory.createEmptyBorder(30, 40, 30, 40)));
-        card.setMaximumSize(new Dimension(460, 340));
+        JPanel card = UiTheme.card(40, 34);
+        card.setMaximumSize(new Dimension(460, 460));
 
-        JLabel done = new JLabel("Quiz Complete!");
-        done.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        JLabel done = new JLabel("🎉 Quiz Complete!", SwingConstants.CENTER);
+        done.setFont(UiTheme.h2());
         done.setForeground(TEXT);
         done.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         bigResult = new JLabel("", SwingConstants.CENTER);
-        bigResult.setFont(new Font("Segoe UI", Font.BOLD, 40));
+        bigResult.setFont(new Font("Segoe UI", Font.BOLD, 44));
         bigResult.setForeground(ACCENT);
         bigResult.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         detailResult = new JLabel("", SwingConstants.CENTER);
-        detailResult.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        detailResult.setFont(UiTheme.body());
         detailResult.setForeground(MUTED);
         detailResult.setAlignmentX(Component.CENTER_ALIGNMENT);
 
@@ -347,46 +309,22 @@ public class QuizGui {
         feedbackLabel.setForeground(GREEN);
         feedbackLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JButton playAgain = new JButton("Play Again");
-        playAgain.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        playAgain.setBackground(ACCENT);
-        playAgain.setForeground(Color.WHITE);
-        playAgain.setFocusPainted(false);
-        playAgain.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        playAgain.setAlignmentX(Component.CENTER_ALIGNMENT);
-        playAgain.addActionListener(e -> startQuiz());
-
-        JButton exit = new JButton("Exit");
-        exit.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        exit.setForeground(MUTED);
-        exit.setFocusPainted(false);
-        exit.setContentAreaFilled(false);
-        exit.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        exit.setAlignmentX(Component.CENTER_ALIGNMENT);
-        exit.addActionListener(e -> System.exit(0));
-
-        JButton viewCert = new JButton("View / Download my Certificate");
-        viewCert.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        viewCert.setBackground(GREEN);
-        viewCert.setForeground(Color.WHITE);
-        viewCert.setOpaque(true);
-        viewCert.setBorderPainted(false);
-        viewCert.setFocusPainted(false);
-        viewCert.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        JButton viewCert = UiTheme.successButton("View / Download my Certificate");
         viewCert.setAlignmentX(Component.CENTER_ALIGNMENT);
         viewCert.addActionListener(e -> showCertificate());
 
-        JButton emailBtn = new JButton("Email my Certificate");
-        emailBtn.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        emailBtn.setForeground(Color.WHITE);
-        emailBtn.setBackground(ACCENT);
-        emailBtn.setOpaque(true);
-        emailBtn.setBorderPainted(false);
-        emailBtn.setFocusPainted(false);
-        emailBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        JButton emailBtn = UiTheme.primaryButton("Email my Certificate");
         emailBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
         emailBtn.addActionListener(e -> emailCertificate());
         emailBtnRef = emailBtn;
+
+        JButton playAgain = UiTheme.primaryButton("Play Again");
+        playAgain.setAlignmentX(Component.CENTER_ALIGNMENT);
+        playAgain.addActionListener(e -> startQuiz());
+
+        JButton exit = UiTheme.ghostButton("Exit");
+        exit.setAlignmentX(Component.CENTER_ALIGNMENT);
+        exit.addActionListener(e -> System.exit(0));
 
         card.add(done);
         card.add(Box.createVerticalStrut(10));
@@ -461,19 +399,9 @@ public class QuizGui {
 
         buttonsPanel.removeAll();
         for (int j = 0; j < q.options.length; j++) {
-            JButton b = new JButton(q.options[j]);
-            b.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-            b.setBackground(CARD);
-            b.setForeground(TEXT);
-            b.setFocusPainted(false);
-            b.setHorizontalAlignment(SwingConstants.LEFT);
-            b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            b.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(BORDER, 1, true),
-                    BorderFactory.createEmptyBorder(12, 14, 12, 14)));
             final int choice = j + 1;
-            b.addActionListener(e -> answerClicked(choice));
-            buttonsPanel.add(b);
+            buttonsPanel.add(makeAnswerButton(q.options[j], true, false, false,
+                    () -> answerClicked(choice)));
         }
         buttonsPanel.revalidate();
         buttonsPanel.repaint();
@@ -517,33 +445,57 @@ public class QuizGui {
         reveal(choice);
     }
 
+    private static JButton makeAnswerButton(String text, boolean enabled, boolean correct,
+                                            boolean wrongPick, Runnable action) {
+        Color base, fg;
+        if (correct)      { base = GREEN; fg = Color.WHITE; }
+        else if (wrongPick){ base = RED;   fg = Color.WHITE; }
+        else if (enabled)  { base = CARD;  fg = TEXT; }
+        else               { base = CARD;  fg = MUTED; }
+
+        JButton b = new JButton(text) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                if (enabled && getModel().isRollover()) {
+                    g2.setColor(isCorrect ? GREEN : UiTheme.ACCENT_DK);
+                    g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 14, 14);
+                    g2.setStroke(new BasicStroke(2.4f));
+                }
+                g2.dispose();
+                super.paintComponent(g);
+            }
+
+            private final boolean isCorrect = correct;
+        };
+        b.setFont(UiTheme.bodyMedium());
+        b.setEnabled(false); // custom paint; we control look via colors above
+        b.setBackground(base);
+        b.setForeground(fg);
+        b.setHorizontalAlignment(SwingConstants.LEFT);
+        b.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER, 1, true),
+                BorderFactory.createEmptyBorder(12, 14, 12, 14)));
+        b.setFocusPainted(false);
+        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        if (action != null) {
+            b.addActionListener(e -> action.run());
+        }
+        return b;
+    }
+
+    /** After an answer (or timeout): lock buttons, color the correct one, penalize wrong. */
     private static void reveal(int choice) {
         Question q = questions.get(index);
         buttonsPanel.removeAll();
 
         for (int j = 0; j < q.options.length; j++) {
-            JButton b = new JButton(q.options[j]);
-            b.setEnabled(false);
-            b.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-            b.setHorizontalAlignment(SwingConstants.LEFT);
-            b.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(BORDER, 1, true),
-                    BorderFactory.createEmptyBorder(12, 14, 12, 14)));
-
             boolean isCorrect = (j == q.correctIndex);
             boolean isWrongPick = (choice - 1 == j && !isCorrect);
-
-            if (isCorrect) {
-                b.setBackground(GREEN);
-                b.setForeground(Color.WHITE);
-            } else if (isWrongPick) {
-                b.setBackground(RED);
-                b.setForeground(Color.WHITE);
-            } else {
-                b.setBackground(CARD);
-                b.setForeground(MUTED);
-            }
-            buttonsPanel.add(b);
+            buttonsPanel.add(makeAnswerButton(q.options[j], false, isCorrect, isWrongPick, null));
         }
         buttonsPanel.revalidate();
         buttonsPanel.repaint();

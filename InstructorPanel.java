@@ -15,9 +15,48 @@ public class InstructorPanel {
     private static final Font HEAD = new Font("Segoe UI", Font.BOLD, 14);
     private static final Font BODY = new Font("Segoe UI", Font.PLAIN, 13);
 
+    /** Flat secondary action button (quiet, hover-to-accent). */
+    private static JButton ghost(String text) {
+        JButton b = new JButton(text);
+        b.setFont(UiTheme.buttonSmall());
+        b.setForeground(UiTheme.MUTED);
+        b.setFocusPainted(false);
+        b.setContentAreaFilled(false);
+        b.setBorderPainted(false);
+        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        b.setBorder(new javax.swing.border.EmptyBorder(8, 14, 8, 14));
+        b.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseEntered(java.awt.event.MouseEvent e) {
+                if (b.isEnabled()) b.setForeground(UiTheme.ACCENT);
+            }
+
+            @Override public void mouseExited(java.awt.event.MouseEvent e) {
+                b.setForeground(UiTheme.MUTED);
+            }
+        });
+        return b;
+    }
+
+    /** Modern flat table: airy rows, blue selection, subtle header rule. */
+    private static JTable themedTable(DefaultTableModel model) {
+        JTable table = new JTable(model);
+        table.setRowHeight(26);
+        table.setFont(BODY);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
+        table.getTableHeader().setBackground(UiTheme.CARD);
+        table.getTableHeader().setForeground(UiTheme.MUTED);
+        table.setGridColor(UiTheme.BORDER);
+        table.setShowHorizontalLines(true);
+        table.setShowVerticalLines(false);
+        table.setSelectionBackground(new Color(0xDBEAFE));
+        table.setSelectionForeground(UiTheme.TEXT);
+        table.setFillsViewportHeight(true);
+        return table;
+    }
+
     /** Opens the password dialog, then the management window on success. */
     public static void showLogin(JFrame parent) {
-        JPasswordField pf = new JPasswordField(20);
+        JPasswordField pf = UiTheme.passwordField(20);
         JPanel p = new JPanel(new BorderLayout(0, 8));
         JLabel msg = new JLabel("Enter instructor password:");
         msg.setFont(BODY);
@@ -39,7 +78,17 @@ public class InstructorPanel {
 
     /** The management window with three tabs. */
     public static void showPanel(JFrame parent) {
-        JTabbedPane tabs = new JTabbedPane();
+        JTabbedPane tabs = new JTabbedPane() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(UiTheme.BG);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
         tabs.setFont(HEAD);
         tabs.addTab("Questions", buildQuestionsTab());
         tabs.addTab("Timer", buildTimerTab());
@@ -49,7 +98,7 @@ public class InstructorPanel {
 
         JDialog d = new JDialog(parent, "Instructor Panel", true);
         d.setContentPane(tabs);
-        d.setSize(720, 520);
+        d.setSize(760, 560);
         d.setLocationRelativeTo(parent);
         d.setVisible(true);
     }
@@ -66,7 +115,11 @@ public class InstructorPanel {
         p.add(hint, BorderLayout.NORTH);
 
         JTextArea area = new JTextArea();
-        area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+        area.setFont(UiTheme.mono());
+        area.setBackground(UiTheme.FIELD_BG);
+        area.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UiTheme.BORDER, 1, true),
+                BorderFactory.createEmptyBorder(8, 10, 8, 10)));
         try (BufferedReader r = new BufferedReader(new InputStreamReader(
                 new FileInputStream("questions.csv"), java.nio.charset.StandardCharsets.UTF_8))) {
             StringBuilder sb = new StringBuilder();
@@ -79,7 +132,7 @@ public class InstructorPanel {
         p.add(new JScrollPane(area), BorderLayout.CENTER);
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton save = new JButton("Save Questions");
+        JButton save = UiTheme.primaryButton("Save Questions");
         save.addActionListener(e -> {
             try (java.io.PrintWriter w = new java.io.PrintWriter(new java.io.OutputStreamWriter(
                     new FileOutputStream("questions.csv"), java.nio.charset.StandardCharsets.UTF_8))) {
@@ -117,7 +170,7 @@ public class InstructorPanel {
         p.add(spinner, c);
 
         c.gridx = 0; c.gridy = 1; c.gridwidth = 2;
-        JButton save = new JButton("Save Timer");
+        JButton save = UiTheme.primaryButton("Save Timer");
         save.addActionListener(e -> {
             int v = (Integer) spinner.getValue();
             QuizStore.saveSecondsPerQuestion(v);
@@ -149,16 +202,14 @@ public class InstructorPanel {
         };
         for (String[] r : rows) model.addRow(r);
 
-        JTable table = new JTable(model);
-        table.setRowHeight(24);
-        table.setFont(BODY);
-        table.getTableHeader().setFont(HEAD);
+        JTable table = themedTable(model);
         p.add(new JScrollPane(table), BorderLayout.CENTER);
 
+
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton open = new JButton("Open in Excel");
+        JButton open = ghost("Open in Excel");
         open.addActionListener(e -> openFile(QuizStore.RESULTS_FILE));
-        JButton resend = new JButton("Resend Certificate");
+        JButton resend = ghost("Resend Certificate");
         resend.setToolTipText("Re-email the certificate to the selected student");
         resend.addActionListener(e -> {
             int viewRow = table.getSelectedRow();
@@ -182,7 +233,24 @@ public class InstructorPanel {
             int pctR = totalR == 0 ? 0 : scoreR * 100 / totalR;
             resendCertificate(p, name, email, scoreR, totalR, pctR);
         });
-        JButton clear = new JButton("Clear All Marks");
+        JButton clear = new JButton("Clear All Marks") {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(UiTheme.DANGER);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        clear.setFont(UiTheme.buttonSmall());
+        clear.setForeground(Color.WHITE);
+        clear.setBorderPainted(false);
+        clear.setFocusPainted(false);
+        clear.setContentAreaFilled(false);
+        clear.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        clear.setBorder(new javax.swing.border.EmptyBorder(8, 16, 8, 16));
         clear.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(p,
                     "Delete ALL saved marks? This cannot be undone.",
@@ -256,10 +324,12 @@ public class InstructorPanel {
         table.setRowHeight(24);
         table.setFont(BODY);
         table.getTableHeader().setFont(HEAD);
+        table.setShowGrid(false);
+        table.setFillsViewportHeight(true);
         p.add(new JScrollPane(table), BorderLayout.CENTER);
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton resendSel = new JButton("Resend to Selected");
+        JButton resendSel = ghost("Resend to Selected");
         resendSel.addActionListener(e -> {
             int viewRow = table.getSelectedRow();
             if (viewRow < 0) {
@@ -275,7 +345,7 @@ public class InstructorPanel {
             int pctR = totalR == 0 ? 0 : scoreR * 100 / totalR;
             resendCertificate(p, name, email, scoreR, totalR, pctR);
         });
-        JButton open = new JButton("Open Log in Excel");
+        JButton open = ghost("Open Log in Excel");
         open.addActionListener(e -> openFile(QuizStore.EMAIL_LOG_FILE));
         buttons.add(resendSel);
         buttons.add(open);
@@ -311,13 +381,13 @@ public class InstructorPanel {
 
         java.util.Properties cfg = QuizStore.loadEmailSettings();
 
-        JTextField hostF = new JTextField(cfg.getProperty("smtp.host", ""), 24);
-        JTextField portF = new JTextField(cfg.getProperty("smtp.port", "465"), 6);
+        JTextField hostF = UiTheme.textField(24);
+        JTextField portF = UiTheme.textField(6);
         JCheckBox sslBox = new JCheckBox("Use SSL (port 465). Uncheck for STARTTLS (587/25)",
                 Boolean.parseBoolean(cfg.getProperty("smtp.ssl", "true")));
-        JTextField userF = new JTextField(cfg.getProperty("smtp.user", ""), 24);
-        JPasswordField passF = new JPasswordField(cfg.getProperty("smtp.pass", ""), 24);
-        JTextField fromF = new JTextField(cfg.getProperty("smtp.from", ""), 24);
+        JTextField userF = UiTheme.textField(24);
+        JPasswordField passF = UiTheme.passwordField(24);
+        JTextField fromF = UiTheme.textField(24);
 
         int y = 0;
         c.gridx = 0; c.gridy = y;
@@ -354,13 +424,13 @@ public class InstructorPanel {
         note.setFont(BODY);
         p.add(note, c);
 
-        JButton save = new JButton("Save Email Settings");
+        JButton save = UiTheme.primaryButton("Save Email Settings");
         c.gridy = ++y;
         p.add(save, c);
         c.gridwidth = 1;
 
-        JTextField testTo = new JTextField(20);
-        JButton testBtn = new JButton("Send Test Email");
+        JTextField testTo = UiTheme.textField(20);
+        JButton testBtn = UiTheme.primaryButton("Send Test Email");
         JPanel testRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         testRow.add(new JLabel("Send test to:"));
         testRow.add(testTo);
