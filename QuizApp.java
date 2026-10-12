@@ -72,27 +72,22 @@ public class QuizApp {
         } catch (InterruptedException ignored) {
         }
 
-        // Email is required: the certificate is delivered by email only.
+        // Email is optional: without one the certificate is still saved locally.
         String studentEmail = "";
-        while (studentEmail.isEmpty()) {
-            System.out.print("Enter your email address (your certificate will be emailed here): ");
-            System.out.flush();
-            String typed = null;
-            try {
-                if (inputClosed && inputQueue.isEmpty()) { // stdin closed (Ctrl+D / pipe end)
-                    System.out.println("(No email entered - certificate will be saved locally instead.)");
-                    break;
-                }
-                InputLine line = inputQueue.poll(120, TimeUnit.SECONDS);
-                if (line == null) break; // timed out waiting
-                typed = line.text.trim();
-            } catch (InterruptedException ignored) {
-            }
-            if (QuizStore.isValidEmail(typed)) {
-                studentEmail = typed;
-            } else {
-                System.out.println("Please enter a valid email address, e.g. name@example.com");
-            }
+        System.out.print("Enter your email address (optional - only if you want it emailed): ");
+        System.out.flush();
+        String typed = null;
+        try {
+            InputLine line = inputQueue.poll(120, TimeUnit.SECONDS);
+            if (line != null) typed = line.text.trim();
+        } catch (InterruptedException ignored) {
+        }
+        if (QuizStore.isValidEmail(typed)) {
+            studentEmail = typed;
+        } else if (typed == null || typed.isEmpty() || inputClosed) {
+            System.out.println("(No email entered - your certificate will be saved locally.)");
+        } else {
+            System.out.println("(Not a valid email address - your certificate will be saved locally.)");
         }
 
         Collections.shuffle(questions); // randomize order each run
@@ -153,16 +148,28 @@ public class QuizApp {
         System.out.println("Total time: " + String.format("%.1f", totalMsUsed / 1000.0) + "s");
         System.out.println(getFeedback(score, total));
 
-        // Certificate is always generated and delivered by email - no download step.
+        // Certificate is always generated and can be opened directly - email is optional.
         java.io.File certFile = CertificateMaker.makeCertificate(studentName, score, total,
                 pct, grade, QuizStore.today());
 
+        System.out.println();
+        if (certFile != null) {
+            System.out.println("Your certificate has been saved to:");
+            System.out.println("    " + certFile.getAbsolutePath());
+        } else {
+            System.out.println("[!] The certificate could not be created.");
+        }
+
         if (!QuizStore.isEmailConfigured()) {
-            System.out.println();
-            System.out.println("[!] No mail server is configured yet, so the email cannot be sent now.");
-            System.out.println("    Your certificate was saved here in the meantime:");
-            System.out.println("    " + (certFile != null ? certFile.getAbsolutePath() : "(could not be created)"));
-            System.out.println("    The instructor can set this up via Instructor > Email.");
+            if (studentEmail.isEmpty()) {
+                System.out.println("    (No email was entered and mail is not configured - nothing was emailed.)");
+            } else {
+                System.out.println("[!] No mail server is configured yet, so your certificate was not emailed.");
+                System.out.println("    The instructor can set this up via Instructor > Email.");
+            }
+        } else if (studentEmail.isEmpty()) {
+        System.out.println("    (You entered no email address, so nothing was emailed."
+                + " Re-run and type one if you want it emailed.)");
         } else {
             System.out.println("Sending your certificate to " + studentEmail + " ...");
             EmailSender.SendResult r = EmailSender.sendCertificate(

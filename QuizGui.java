@@ -18,6 +18,7 @@ public class QuizGui {
     private static int secondsPerQuestion = QuizStore.loadSecondsPerQuestion();
     private static String studentName = "";
     private static String studentEmail = "";
+    private static java.io.File lastCertFile; // certificate for the finished attempt
 
     static class Question {
         final String text;
@@ -170,7 +171,7 @@ public class QuizGui {
         title.setForeground(TEXT);
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel subtitle = new JLabel("Enter your name and email - your certificate arrives by email");
+        JLabel subtitle = new JLabel("Enter your name - your certificate is shown at the end\n(and optionally emailed)");
         subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         subtitle.setForeground(MUTED);
         subtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -186,9 +187,9 @@ public class QuizGui {
         emailField.setHorizontalAlignment(JTextField.CENTER);
         emailField.setMaximumSize(new Dimension(240, 34));
         emailField.setAlignmentX(Component.CENTER_ALIGNMENT);
-        emailField.setToolTipText("Your certificate will be emailed to this address");
+        emailField.setToolTipText("Optional: leave blank to only download your certificate");
 
-        emailLabel = new JLabel("Your email (your certificate is sent here)");
+        emailLabel = new JLabel("Your email (optional - only if you want it emailed)");
         emailLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         emailLabel.setForeground(MUTED);
         emailLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -364,6 +365,17 @@ public class QuizGui {
         exit.setAlignmentX(Component.CENTER_ALIGNMENT);
         exit.addActionListener(e -> System.exit(0));
 
+        JButton viewCert = new JButton("View / Download my Certificate");
+        viewCert.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        viewCert.setBackground(GREEN);
+        viewCert.setForeground(Color.WHITE);
+        viewCert.setOpaque(true);
+        viewCert.setBorderPainted(false);
+        viewCert.setFocusPainted(false);
+        viewCert.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        viewCert.setAlignmentX(Component.CENTER_ALIGNMENT);
+        viewCert.addActionListener(e -> showCertificate());
+
         JButton emailBtn = new JButton("Email my Certificate");
         emailBtn.setFont(new Font("Segoe UI", Font.BOLD, 15));
         emailBtn.setForeground(Color.WHITE);
@@ -384,6 +396,8 @@ public class QuizGui {
         card.add(Box.createVerticalStrut(6));
         card.add(feedbackLabel);
         card.add(Box.createVerticalStrut(20));
+        card.add(viewCert);
+        card.add(Box.createVerticalStrut(8));
         card.add(emailBtn);
         card.add(Box.createVerticalStrut(8));
         card.add(playAgain);
@@ -409,20 +423,16 @@ public class QuizGui {
         studentName = name;
         String email = emailField.getText().trim();
         if (email.isEmpty()) {
+            studentEmail = ""; // no email is fine - the certificate can still be shown/downloaded
+        } else if (!QuizStore.isValidEmail(email)) {
             JOptionPane.showMessageDialog(frame,
-                    "Please enter your email address - your certificate is sent to it.",
-                    "Email required", JOptionPane.WARNING_MESSAGE);
-            emailField.requestFocusInWindow();
-            return;
-        }
-        if (!QuizStore.isValidEmail(email)) {
-            JOptionPane.showMessageDialog(frame,
-                    "That email address does not look right. Please fix it.",
+                    "That email address does not look right. Please fix it (or clear the field).",
                     "Check email", JOptionPane.WARNING_MESSAGE);
             emailField.requestFocusInWindow();
             return;
+        } else {
+            studentEmail = email;
         }
-        studentEmail = email;
         secondsPerQuestion = QuizStore.loadSecondsPerQuestion(); // pick up instructor changes
         if (swingTimer != null && swingTimer.isRunning()) swingTimer.stop();
         Collections.shuffle(questions);
@@ -548,7 +558,7 @@ public class QuizGui {
         pause.start();
     }
 
-    /** Generates a fresh certificate and emails it to the student in the background. */
+    /** Emails the already-generated certificate in the background (optional convenience). */
     private static void emailCertificate() {
         if (!QuizStore.isEmailConfigured()) {
             offerEmailSetup();
@@ -557,7 +567,7 @@ public class QuizGui {
         if (studentEmail.isEmpty()) {
             JOptionPane.showMessageDialog(frame,
                     "You did not enter an email address on the start screen.\n"
-                    + "Type it there, play again (or use Play Again), then email it.",
+                    + "You can still use \"View / Download my Certificate\" without one.",
                     "No email address", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -567,10 +577,13 @@ public class QuizGui {
             return;
         }
 
-        final java.io.File cert = CertificateMaker.makeCertificate(studentName, score,
-                questions.size(), score * 100 / Math.max(1, questions.size()),
-                QuizStore.gradeFor(score * 100 / Math.max(1, questions.size())),
-                QuizStore.today());
+        final java.io.File cert;
+        if (lastCertFile != null && lastCertFile.exists()) {
+            cert = lastCertFile;
+        } else {
+            generateCertificate();
+            cert = lastCertFile;
+        }
         if (cert == null) {
             JOptionPane.showMessageDialog(frame, "Could not create the certificate file.",
                     "Error", JOptionPane.ERROR_MESSAGE);
@@ -644,7 +657,40 @@ public class QuizGui {
         detailResult.setText(detail);
         feedbackLabel.setText(getFeedback(pct));
 
+        // Generate the certificate immediately so the student can view/download it
+        // without needing email at all.
+        generateCertificate();
+
         cards.show(mainPanel, "results");
+    }
+
+    /** Creates the certificate PNG on disk right away; called when the quiz ends. */
+    private static void generateCertificate() {
+        int total = questions.size();
+        int pct = total == 0 ? 0 : score * 100 / total;
+        lastCertFile = CertificateMaker.makeCertificate(studentName, score, total,
+                pct, QuizStore.gradeFor(pct), QuizStore.today());
+    }
+
+    /** Opens the finished certificate in the system's default image viewer. */
+    private static void showCertificate() {
+        if (lastCertFile == null || !lastCertFile.exists()) {
+            generateCertificate();
+        }
+        if (lastCertFile == null || !lastCertFile.exists()) {
+            JOptionPane.showMessageDialog(frame, "Could not create or find the certificate file.",
+                    "Certificate", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        try {
+            java.awt.Desktop.getDesktop().open(lastCertFile.getAbsoluteFile());
+        } catch (Exception ex) {
+            // No desktop integration (e.g. server or minimal Linux) - tell the student where it is.
+            JOptionPane.showMessageDialog(frame,
+                "Certificate saved to:\n" + lastCertFile.getAbsolutePath()
+                + "\n\n(Open that file with any image viewer.)",
+                "Certificate saved", JOptionPane.INFORMATION_MESSAGE);
+        }
     }
 
     private static String getFeedback(int pct) {

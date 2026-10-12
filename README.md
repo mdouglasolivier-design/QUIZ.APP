@@ -6,9 +6,12 @@ mode for the terminal. No external libraries — just the JDK.
 
 - **Graphical (default):** click 1–4 buttons, watch a color-changing timer bar turn
   orange then red as time runs low. When the buzzer hits, answers lock automatically.
-- **Certificates by email:** students enter their name and email, play, and their
-  personalized certificate is **sent to their inbox automatically** — email-only,
-  no download step.
+- **Certificates you can see right away:** when the quiz ends, your personalized
+  certificate is generated on the spot — click **View / Download my Certificate** on
+  the results screen to open it, and find it saved in the `certificates/` folder.
+  Emailing it is **optional** (the email address is optional too).
+- **Certificates by email:** enter your email and (if the instructor configured the
+  mail server) the certificate is also sent to the student's inbox.
 - **Instructor panel (password: `teach123`):** change the timer, edit exam questions,
   view every student's marks in a table (or open them in Excel), and configure
   **email delivery** of certificates.
@@ -72,16 +75,21 @@ To change the default permanently, edit `secondsPerQuestion` (GUI) or
 
 ## 🎓 Students: name, quiz, certificate by email
 
-1. **Start screen:** type your **name** and your **email address** (both required —
-   the certificate is emailed to that address), then click **Start Quiz**.
+1. **Start screen:** type your **name**. The email address is **optional** — only
+   needed if you want the certificate emailed to you.
 2. Questions appear one by one in random order. Click an answer (or the timer decides).
 3. The **timer bar** drains from blue → orange (half time) → red (last 5 seconds, the
    "Xs" counter turns red too).
 4. After you click (or time out), the correct answer flashes **green** (your wrong pick
    flashes **red**) for a moment, then the next question appears.
 5. The **results screen** shows your score, timeouts, total time, and feedback.
-   Click **Email my Certificate** and it is sent straight to the address you typed.
-   **Play Again** starts a fresh shuffled round.
+   Click **View / Download my Certificate** to see your certificate immediately —
+   it is saved in the `certificates/` folder. Optionally click **Email my
+   Certificate** to also send it to the address you typed. **Play Again** starts a
+   fresh shuffled round.
+
+   > Emailing needs a one-time mail-server setup by the instructor; without it, the
+   > View / Download button still works fine.
 
    > First time only, the mail server must be configured. The app warns about it on
    > startup and walks the instructor through setup; the Email Log tab tracks every
@@ -102,13 +110,15 @@ Click **Instructor** on the start screen and enter the password **`teach123`**
 
 ## ⌨️ How to play (console)
 
-1. Enter your **name**, then your **email address** (the certificate is emailed there —
-   invalid addresses are re-prompted).
+1. Enter your **name**, then optionally your **email address** (only if you want the
+   certificate emailed — press Enter to skip it).
 2. Type `1`–`4` and press Enter. The prompt shows the limit, e.g. `Your answer (1-4) [20s]:`
 3. Nothing prints while you type — no ticking text will ever garble your input.
 4. If time runs out: `TIME'S UP!` and the correct answer is revealed.
-5. Type `q` to quit early; you'll still get your partial score and your certificate
-   is emailed automatically at the end.
+5. Type `q` to quit early; you'll still get your partial score and your certificate.
+6. At the end, the **certificate file path** is printed — open it with any image
+   viewer. It is also emailed automatically if you gave an email address and the
+   mail server is configured.
 
 ---
 
